@@ -1,0 +1,19 @@
+<html>
+<head>
+  <title>VikiazScan - Orphaned Resources</title>
+</head>
+<body>
+<h1>VikiazScan - Orphaned Resources</h1>
+<table border="1">
+<tr><th>Name</th><th>Resource Group</th><th>Type</th><th>Location</th></tr>
+{{range .}}
+<tr>
+<td>{{.Name}}</td>
+<td>{{.ResourceGroup}}</td>
+<td>{{.Type}}</td>
+<td>{{.Location}}</td>
+</tr>
+{{end}}
+</table>
+</body>
+</html>

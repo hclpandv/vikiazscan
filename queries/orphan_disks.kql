@@ -1,0 +1,5 @@
+Resources
+| where type has "microsoft.compute/disks"
+| where managedBy == "" or properties.diskState == "Unattached"
+| where not(name endswith "-ASRReplica" or name startswith "ms-asr-" or name startswith "asrseeddisk-")
+| project name, id, skuName = sku.name, diskSizeGB = properties.diskSizeGB, tags, resourceGroup, type, location
