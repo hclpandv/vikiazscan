@@ -5,4 +5,7 @@ type OrphanedResource struct {
 	ResourceGroup string
 	Type          string
 	Location      string
+	SKUName       string // <--- Make sure this exists
+	DiskSize      int
+	Tags          string
 }

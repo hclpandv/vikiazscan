@@ -60,7 +60,11 @@ func ExecuteKQLQuery(kqlFile string) ([]OrphanedResource, error) {
 				ResourceGroup: fmt.Sprintf("%v", r["resourceGroup"]),
 				Type:          fmt.Sprintf("%v", r["type"]),
 				Location:      fmt.Sprintf("%v", r["location"]),
+				SKUName:       fmt.Sprintf("%v", r["skuName"]),
+				DiskSize:      int(r["diskSizeGB"].(float64)),
+				Tags:          fmt.Sprintf("%v", r["tags"]),
 			})
+
 		}
 	}
 

@@ -1,21 +1,40 @@
 package internal
 
 import (
+	"fmt"
 	"html/template"
 	"os"
+	"time"
 )
 
 func GenerateHTMLReport(filename string, resources []OrphanedResource) error {
-	tmpl, err := template.ParseFiles("templates/report.html")
+	// Load the template from the file
+	t, err := template.ParseFiles("templates/report.html")
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to parse HTML template: %v", err)
 	}
 
-	f, err := os.Create(filename)
-	if err != nil {
-		return err
+	// Data for the template
+	data := struct {
+		Date      string
+		Resources []OrphanedResource
+	}{
+		Date:      time.Now().Format("2006-01-02 15:04:05"),
+		Resources: resources,
 	}
-	defer f.Close()
 
-	return tmpl.Execute(f, resources)
+	// Create the output file
+	file, err := os.Create(filename)
+	if err != nil {
+		return fmt.Errorf("failed to create HTML report: %v", err)
+	}
+	defer file.Close()
+
+	// Execute the template and write to the file
+	err = t.Execute(file, data)
+	if err != nil {
+		return fmt.Errorf("failed to execute template: %v", err)
+	}
+
+	return nil
 }
