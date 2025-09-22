@@ -1,0 +1,1 @@
+## cli tool to generate azure assessment report
