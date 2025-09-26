@@ -1,0 +1,16 @@
+Resources
+| where type == "microsoft.network/networksecuritygroups"
+| mv-expand rules = properties.securityRules
+| where tostring(rules.properties.direction) == "Inbound"
+  and tostring(rules.properties.access) == "Allow"
+  and (
+        tostring(rules.properties.sourceAddressPrefix) in ("*", "0.0.0.0/0", "Internet")
+        or array_length(rules.properties.sourceAddressPrefixes) == 0
+     )
+| project
+    name,
+    location,
+    ruleName = tostring(rules.name),
+    source = tostring(rules.properties.sourceAddressPrefix),
+    destPort = tostring(rules.properties.destinationPortRange),
+    priority = tostring(rules.properties.priority)
