@@ -18,10 +18,8 @@ var ScanCmd = &cobra.Command{
 		// Discover all .kql files in queries folder
 		queries := internal.GetKQLFiles("queries")
 
-		results := make(map[string]struct {
-			Headers []string
-			Rows    [][]string
-		})
+		// Map for tabs: folder/category -> list of tables
+		tabs := make(map[string][]internal.TableData)
 
 		for _, kqlFile := range queries {
 			headers, rows, err := internal.ExecuteKQLQuery(kqlFile)
@@ -30,19 +28,33 @@ var ScanCmd = &cobra.Command{
 				continue
 			}
 
-			// derive section name from file name
+			// derive category from folder
+			rel, err := filepath.Rel("queries", kqlFile)
+			if err != nil {
+				log.Printf("Error getting relative path for %s: %v", kqlFile, err)
+				continue
+			}
+			folder := filepath.Dir(rel)
+			if folder == "." {
+				folder = "uncategorized"
+			}
+
+			// derive table name from file name
 			base := filepath.Base(kqlFile)
 			name := strings.TrimSuffix(base, ".kql")
 			name = strings.ReplaceAll(name, "_", " ")
 
-			results[name] = struct {
-				Headers []string
-				Rows    [][]string
-			}{headers, rows}
+			// append table to the appropriate tab
+			table := internal.TableData{
+				Name:    name,
+				Headers: headers,
+				Rows:    rows,
+			}
+			tabs[folder] = append(tabs[folder], table)
 		}
 
 		// Generate HTML report
-		err := internal.GenerateHTMLReport("vikiazscan-report.html", results)
+		err := internal.GenerateHTMLReport("vikiazscan-report.html", tabs)
 		if err != nil {
 			log.Fatalf("Error generating report: %v", err)
 		}

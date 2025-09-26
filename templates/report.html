@@ -8,32 +8,48 @@
 </head>
 <body class="p-1 bg-light">
 
-  <!-- Header with report title and timestamp -->
   <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
-    <h2>Azure Cloud assesment report</h2>
+    <h2>Azure Cloud assessment report</h2>
     <span id="report-timestamp" style="color:gray;"></span>
   </div>
 
-  {{range $section, $data := .}}
-  <h4 class="mt-5">{{$section}}</h4>
-  <table class="table table-striped table-bordered table-hover align-middle table-sm" style="font-size:0.85rem;">
-    <thead class="table-dark">
-      <tr>
-        {{range $data.Headers}}<th>{{.}}</th>{{end}}
-      </tr>
-    </thead>
-    <tbody>
-      {{range $data.Rows}}
-        <tr>{{range .}}<td>{{.}}</td>{{end}}</tr>
-      {{end}}
-    </tbody>
-  </table>
-  {{end}}
+  {{/* Tabs navigation */}}
+  <ul class="nav nav-tabs mt-3" role="tablist">
+    {{ $first := true }}
+    {{range $cat, $_ := .}}
+      <li class="nav-item">
+        <a class="nav-link {{if $first}}active{{end}}" id="tab-{{$cat}}" data-bs-toggle="tab" href="#{{$cat}}" role="tab">{{title $cat}}</a>
+      </li>
+      {{ $first = false }}
+    {{end}}
+  </ul>
 
-  <!-- Script to fill the timestamp -->
+  {{/* Tabs content */}}
+  <div class="tab-content mt-3">
+    {{ $firstPane := true }}
+    {{range $cat, $tables := .}}
+      <div class="tab-pane fade {{if $firstPane}}show active{{end}}" id="{{$cat}}" role="tabpanel">
+        {{range $tables}}
+          <h4 class="mt-3">{{.Name}}</h4>
+          <table class="table table-striped table-bordered table-hover table-sm" style="font-size:0.85rem;">
+            <thead class="table-dark">
+              <tr>{{range .Headers}}<th>{{.}}</th>{{end}}</tr>
+            </thead>
+            <tbody>
+              {{range .Rows}}
+                <tr>{{range .}}<td>{{.}}</td>{{end}}</tr>
+              {{end}}
+            </tbody>
+          </table>
+        {{end}}
+      </div>
+      {{ $firstPane = false }}
+    {{end}}
+  </div>
+
   <script>
     document.getElementById('report-timestamp').textContent = 'Generated: ' + new Date().toLocaleString();
   </script>
-
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

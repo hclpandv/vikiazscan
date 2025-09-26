@@ -3,14 +3,26 @@ package internal
 import (
 	"html/template"
 	"os"
+	"strings"
 )
 
-// GenerateHTMLReport renders multiple sections (one per KQL file)
-func GenerateHTMLReport(outputFile string, data map[string]struct {
+// TableData represents a single query table
+type TableData struct {
+	Name    string
 	Headers []string
 	Rows    [][]string
-}) error {
-	tmpl, err := template.ParseFiles("templates/report.html")
+}
+
+// GenerateHTMLReport renders multiple tabs (one per folder/category)
+func GenerateHTMLReport(outputFile string, tabs map[string][]TableData) error {
+	funcMap := template.FuncMap{
+		"title": func(s string) string {
+			// Convert folder names like "orphaned-resources" -> "Orphaned Resources"
+			return strings.Title(strings.ReplaceAll(s, "-", " "))
+		},
+	}
+
+	tmpl, err := template.New("report.html").Funcs(funcMap).ParseFiles("templates/report.html")
 	if err != nil {
 		return err
 	}
@@ -21,5 +33,5 @@ func GenerateHTMLReport(outputFile string, data map[string]struct {
 	}
 	defer f.Close()
 
-	return tmpl.Execute(f, data)
+	return tmpl.Execute(f, tabs)
 }
