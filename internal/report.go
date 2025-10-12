@@ -1,40 +1,37 @@
 package internal
 
 import (
-	"fmt"
 	"html/template"
 	"os"
-	"time"
+	"strings"
 )
 
-func GenerateHTMLReport(filename string, resources []OrphanedResource) error {
-	// Load the template from the file
-	t, err := template.ParseFiles("templates/report.html")
+// TableData represents a single query table
+type TableData struct {
+	Name    string
+	Headers []string
+	Rows    [][]string
+}
+
+// GenerateHTMLReport renders multiple tabs (one per folder/category)
+func GenerateHTMLReport(outputFile string, tabs map[string][]TableData) error {
+	funcMap := template.FuncMap{
+		"title": func(s string) string {
+			// Convert folder names like "orphaned-resources" -> "Orphaned Resources"
+			return strings.Title(strings.ReplaceAll(s, "-", " "))
+		},
+	}
+
+	tmpl, err := template.New("report.html").Funcs(funcMap).ParseFiles("templates/report.html")
 	if err != nil {
-		return fmt.Errorf("failed to parse HTML template: %v", err)
+		return err
 	}
 
-	// Data for the template
-	data := struct {
-		Date      string
-		Resources []OrphanedResource
-	}{
-		Date:      time.Now().Format("2006-01-02 15:04:05"),
-		Resources: resources,
-	}
-
-	// Create the output file
-	file, err := os.Create(filename)
+	f, err := os.Create(outputFile)
 	if err != nil {
-		return fmt.Errorf("failed to create HTML report: %v", err)
+		return err
 	}
-	defer file.Close()
+	defer f.Close()
 
-	// Execute the template and write to the file
-	err = t.Execute(file, data)
-	if err != nil {
-		return fmt.Errorf("failed to execute template: %v", err)
-	}
-
-	return nil
+	return tmpl.Execute(f, tabs)
 }

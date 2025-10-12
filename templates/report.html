@@ -1,50 +1,55 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Orphaned Resources Report</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <style>
-        body { padding: 20px; }
-        h1 { margin-bottom: 20px; }
-        table th, table td { vertical-align: middle; }
-    </style>
+  <meta charset="utf-8">
+  <title>Azure Scan Report</title>
+  <link rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
 </head>
-<body>
-    <div class="container">
-        <header class="mb-4">
-            <h1 class="text-primary">Orphaned Resources Report</h1>
-            <p class="text-muted">Generated on {{.Date}}</p>
-        </header>
-        <section>
-            <table class="table table-striped table-bordered table-hover">
-                <thead class="table-dark">
-                    <tr>
-                        <th>Name</th>
-                        <th>Resource Group</th>
-                        <th>Type</th>
-                        <th>Location</th>
-                        <th>SKU</th>
-                        <th>Disk Size (GB)</th>
-                        <th>Tags</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {{range .Resources}}
-                    <tr>
-                        <td>{{.Name}}</td>
-                        <td>{{.ResourceGroup}}</td>
-                        <td>{{.Type}}</td>
-                        <td>{{.Location}}</td>
-                        <td>{{.SKUName}}</td>
-                        <td>{{.DiskSize}}</td>
-                        <td>{{.Tags}}</td>
-                    </tr>
-                    {{end}}
-                </tbody>
-            </table>
-        </section>
-    </div>
+<body class="p-1 bg-light">
+
+  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+    <h2>Azure Cloud assessment report</h2>
+    <span id="report-timestamp" style="color:gray;"></span>
+  </div>
+
+  {{/* Tabs navigation */}}
+  <ul class="nav nav-tabs mt-3" role="tablist">
+    {{ $first := true }}
+    {{range $cat, $_ := .}}
+      <li class="nav-item">
+        <a class="nav-link {{if $first}}active{{end}}" id="tab-{{$cat}}" data-bs-toggle="tab" href="#{{$cat}}" role="tab">{{title $cat}}</a>
+      </li>
+      {{ $first = false }}
+    {{end}}
+  </ul>
+
+  {{/* Tabs content */}}
+  <div class="tab-content mt-3">
+    {{ $firstPane := true }}
+    {{range $cat, $tables := .}}
+      <div class="tab-pane fade {{if $firstPane}}show active{{end}}" id="{{$cat}}" role="tabpanel">
+        {{range $tables}}
+          <h4 class="mt-3">{{.Name}}</h4>
+          <table class="table table-striped table-bordered table-hover table-sm" style="font-size:0.85rem;">
+            <thead class="table-dark">
+              <tr>{{range .Headers}}<th>{{.}}</th>{{end}}</tr>
+            </thead>
+            <tbody>
+              {{range .Rows}}
+                <tr>{{range .}}<td>{{.}}</td>{{end}}</tr>
+              {{end}}
+            </tbody>
+          </table>
+        {{end}}
+      </div>
+      {{ $firstPane = false }}
+    {{end}}
+  </div>
+
+  <script>
+    document.getElementById('report-timestamp').textContent = 'Generated: ' + new Date().toLocaleString();
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

@@ -5,68 +5,98 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path/filepath"
+	"strings"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resourcegraph/armresourcegraph"
 )
 
-func ExecuteKQLQuery(kqlFile string) ([]OrphanedResource, error) {
-	// Read KQL file
+// ExecuteKQLQuery runs a KQL file and returns headers and rows
+func ExecuteKQLQuery(kqlFile string) ([]string, [][]string, error) {
 	queryBytes, err := os.ReadFile(kqlFile)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read KQL file: %v", err)
+		return nil, nil, fmt.Errorf("failed to read KQL file: %v", err)
 	}
 	query := string(queryBytes)
 
-	// Authenticate with Azure
 	cred, err := azidentity.NewDefaultAzureCredential(nil)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get Azure credential: %v", err)
+		return nil, nil, fmt.Errorf("failed to get Azure credential: %v", err)
 	}
 
 	client, err := armresourcegraph.NewClient(cred, nil)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create ARG client: %v", err)
+		return nil, nil, fmt.Errorf("failed to create ARG client: %v", err)
 	}
 
-	// Prepare ARG query request
 	request := armresourcegraph.QueryRequest{
 		Query:         &query,
-		Subscriptions: nil, // optional: can specify subscription IDs
+		Subscriptions: nil,
 	}
 
 	resp, err := client.Resources(context.Background(), request, nil)
 	if err != nil {
-		return nil, fmt.Errorf("failed to run ARG query: %v", err)
+		return nil, nil, fmt.Errorf("failed to run ARG query: %v", err)
 	}
 
-	var resources []OrphanedResource
+	// Convert resp.Data to []map[string]interface{}
+	b, err := json.Marshal(resp.Data)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to marshal resp.Data: %v", err)
+	}
 
-	// ARG response is in JSON format; parse it
-	if resp.Data != nil {
-		// Convert to generic JSON
-		var data []map[string]interface{}
-		rawData, err := json.Marshal(resp.Data)
+	var arr []map[string]interface{}
+	if err := json.Unmarshal(b, &arr); err != nil {
+		return nil, nil, fmt.Errorf("failed to unmarshal resp.Data: %v", err)
+	}
+
+	// Build headers
+	var headers []string
+	if len(arr) > 0 {
+		for h := range arr[0] {
+			headers = append(headers, h)
+		}
+	}
+
+	// Build rows
+	var rows [][]string
+	for _, m := range arr {
+		var r []string
+		for _, h := range headers {
+			v, ok := m[h]
+			if !ok || v == nil {
+				r = append(r, "")
+				continue
+			}
+			switch val := v.(type) {
+			case map[string]interface{}, []interface{}:
+				j, _ := json.Marshal(val)
+				r = append(r, string(j))
+			default:
+				r = append(r, fmt.Sprintf("%v", val))
+			}
+		}
+		rows = append(rows, r)
+	}
+
+	return headers, rows, nil
+}
+
+// GetKQLFiles scans a folder and returns all .kql files
+func GetKQLFiles(folder string) []string {
+	var files []string
+	err := filepath.WalkDir(folder, func(path string, d os.DirEntry, err error) error {
 		if err != nil {
-			return nil, fmt.Errorf("failed to marshal ARG response: %v", err)
+			return err
 		}
-		if err := json.Unmarshal(rawData, &data); err != nil {
-			return nil, fmt.Errorf("failed to unmarshal ARG response: %v", err)
+		if !d.IsDir() && strings.HasSuffix(d.Name(), ".kql") {
+			files = append(files, path)
 		}
-
-		for _, r := range data {
-			resources = append(resources, OrphanedResource{
-				Name:          fmt.Sprintf("%v", r["name"]),
-				ResourceGroup: fmt.Sprintf("%v", r["resourceGroup"]),
-				Type:          fmt.Sprintf("%v", r["type"]),
-				Location:      fmt.Sprintf("%v", r["location"]),
-				SKUName:       fmt.Sprintf("%v", r["skuName"]),
-				DiskSize:      int(r["diskSizeGB"].(float64)),
-				Tags:          fmt.Sprintf("%v", r["tags"]),
-			})
-
-		}
+		return nil
+	})
+	if err != nil {
+		panic(fmt.Sprintf("Error reading queries folder: %v", err))
 	}
-
-	return resources, nil
+	return files
 }
