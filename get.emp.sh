@@ -34,7 +34,7 @@ if ! echo "$PATH" | grep -q "$INSTALL_DIR"; then
     echo '  echo "export PATH=\$HOME/.local/bin:\$PATH" >> ~/.bashrc'
 fi
 
-sudo mv "$TMP_FILE" "$INSTALL_DIR/$CLI_NAME"
+mv "$TMP_FILE" "$INSTALL_DIR/$CLI_NAME"
 
 echo "$CLI_NAME installed to $INSTALL_DIR/$CLI_NAME"
 echo "Run '$CLI_NAME --help' to get started."
