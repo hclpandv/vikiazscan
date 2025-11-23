@@ -26,8 +26,14 @@ curl -L -o "$TMP_FILE" "$URL"
 # Make executable
 chmod +x "$TMP_FILE"
 
-# Install to /usr/local/bin
-INSTALL_DIR="/usr/local/bin"
+# Install to $HOME/.local/bin
+INSTALL_DIR="$HOME/.local/bin"
+if ! echo "$PATH" | grep -q "$INSTALL_DIR"; then
+    echo "WARNING: ~/.local/bin is not in PATH"
+    echo "Add it using:"
+    echo '  echo "export PATH=\$HOME/.local/bin:\$PATH" >> ~/.bashrc'
+fi
+
 sudo mv "$TMP_FILE" "$INSTALL_DIR/$CLI_NAME"
 
 echo "$CLI_NAME installed to $INSTALL_DIR/$CLI_NAME"
